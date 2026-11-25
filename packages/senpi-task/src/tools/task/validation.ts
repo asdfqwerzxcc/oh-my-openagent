@@ -149,7 +149,12 @@ export function validateBatchShape(params: SpawnParamsInput): BatchShapeResult {
 // One task call runs either entirely in the background or entirely in the foreground: an item-level
 // flag is a mirror of the batch setting, never a per-item override. Agreement is hoisted so a batch
 // whose items all say true is honored; disagreement is a typed error instead of a silent drop.
-export function resolveRunInBackground(params: SpawnParamsInput): RunInBackgroundResolution {
+// An explicit flag always wins, in either direction; only an omitted one follows
+// OMO_TASK_DEFAULT_BACKGROUND=1, the marker a supervising pane sets so its turn is never held.
+export function resolveRunInBackground(
+  params: SpawnParamsInput,
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): RunInBackgroundResolution {
   const seen: string[] = []
   const values = new Set<boolean>()
   const note = (label: string, value: boolean | undefined): void => {
@@ -169,7 +174,8 @@ export function resolveRunInBackground(params: SpawnParamsInput): RunInBackgroun
     }
   }
   const [runInBackground] = values
-  return { kind: "ok", runInBackground }
+  if (runInBackground !== undefined) return { kind: "ok", runInBackground }
+  return { kind: "ok", runInBackground: env["OMO_TASK_DEFAULT_BACKGROUND"] === "1" ? true : undefined }
 }
 
 export function resolveSpawnItems(params: SpawnParamsInput): ResolveSpawnItemsResult {

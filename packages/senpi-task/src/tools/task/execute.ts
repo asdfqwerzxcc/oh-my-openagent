@@ -61,7 +61,7 @@ export function buildTaskExecute(deps: TaskToolDeps, options: ForegroundWaitOpti
     const shape = validateBatchShape(params)
     if (shape.kind === "error") return invalidArguments(shape.error.message)
 
-    const background = resolveRunInBackground(params)
+    const background = resolveRunInBackground(params, options.env)
     if (background.kind === "error") return invalidArguments(background.error.message)
     const runInBackground = background.runInBackground
 

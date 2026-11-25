@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
 import type { ResolvedSpawnItem, TaskToolDetails, TaskToolItemDetail } from "./types"
-import { resolveSpawnItems, validateBatchShape, validateTaskTarget } from "./validation"
+import { resolveRunInBackground, resolveSpawnItems, validateBatchShape, validateTaskTarget } from "./validation"
 
 describe("validateTaskTarget", () => {
   test("#given only category #when validated #then resolves to a category selection", () => {
@@ -542,5 +542,37 @@ describe("resolveSpawnItems category+model exclusivity", () => {
     expect(result.kind).toBe("ok")
     if (result.kind !== "ok") throw new Error("expected ok")
     expect(result.items[0]?.model).toBe("openai/gpt-5.6-sol")
+  })
+})
+
+describe("resolveRunInBackground", () => {
+  test("#given an omitted flag and the supervising marker #then the call defaults to background", () => {
+    expect(resolveRunInBackground({ prompt: "p", category: "quick" }, { OMO_TASK_DEFAULT_BACKGROUND: "1" })).toEqual({
+      kind: "ok",
+      runInBackground: true,
+    })
+  })
+
+  test("#given an omitted flag and no marker #then the foreground default stays", () => {
+    expect(resolveRunInBackground({ prompt: "p", category: "quick" }, {})).toEqual({
+      kind: "ok",
+      runInBackground: undefined,
+    })
+  })
+
+  test("#given an explicit false and the marker #then the explicit flag still blocks", () => {
+    expect(
+      resolveRunInBackground(
+        { prompt: "p", category: "quick", run_in_background: false },
+        { OMO_TASK_DEFAULT_BACKGROUND: "1" },
+      ),
+    ).toEqual({ kind: "ok", runInBackground: false })
+  })
+
+  test("#given an explicit true and no marker #then the explicit flag still runs in background", () => {
+    expect(resolveRunInBackground({ prompt: "p", category: "quick", run_in_background: true }, {})).toEqual({
+      kind: "ok",
+      runInBackground: true,
+    })
   })
 })
